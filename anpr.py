@@ -4,7 +4,7 @@ import pytesseract
 import sys
 
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-original_image = cv2.imread('nomera.jpeg')
+original_image = cv2.imread('nomera1.jpeg')
 cv2.imshow("img1", original_image)
 
 
