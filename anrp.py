@@ -2,7 +2,7 @@ import cv2
 import pytesseract
 import numpy as np
 from transliterate import translit
-
+import imutils
 
 
 if __name__ == '__main__':
@@ -15,11 +15,13 @@ image = cv2.imread('nomera1.jpeg')
 
 cv2.namedWindow( "settings" ) # создаем окно настроек
 
-img = cv2.imread('nomera1.jpeg')
 # создаем 6 бегунков для настройки начального и конечного цвета фильтра
-cv2.createTrackbar('min', 'settings', 30, 255, nothing)
-cv2.createTrackbar('max', 'settings', 100, 255, nothing)
-
+cv2.createTrackbar('createCLAHE', 'settings', 1, 50, nothing)
+cv2.createTrackbar('fastNlMeansDenoising', 'settings', 33, 150, nothing)
+cv2.createTrackbar('min', 'settings', 2, 255, nothing)
+cv2.createTrackbar('max', 'settings', 193, 255, nothing)
+cv2.createTrackbar('RageMin', 'settings', 2, 255, nothing)
+cv2.createTrackbar('RageMax', 'settings', 193, 255, nothing)
 # Предобработка изображения
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -28,7 +30,7 @@ cascade_classifier = cv2.CascadeClassifier('hrpn.xml')
 
 # Обнаружение номеров автомобилей
 car_plates = cascade_classifier.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-color_yellow = (0,255,255)
+color_yellow = (0,0,0)
 while  True:
 # Перебор найденных номеров автомобилей и улучшение распознавания
     for (x, y, w, h) in car_plates:
@@ -41,23 +43,42 @@ while  True:
 
         # Отрисовка рамки вокруг номера на исходном изображении
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.putText(image, 'Car Plate', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+      
     
         # cv2.imwrite('./nnn.png',plate_image)
 
-        config = r'--oem 3 --psm 6'
-        gray = cv2.cvtColor(plate_image, cv2.COLOR_BGR2GRAY)
-
+        
+        
         h1 = cv2.getTrackbarPos('min', 'settings')
         s1 = cv2.getTrackbarPos('max', 'settings')
-        # gray =  thresh = cv2.inRange(gray, h1, s1)
+        Rageh1 = cv2.getTrackbarPos('RageMin', 'settings')
+        Rages1 = cv2.getTrackbarPos('RageMax', 'settings')
+        den = cv2.getTrackbarPos('createCLAHE', 'settings')
+        den1 = cv2.getTrackbarPos('fastNlMeansDenoising', 'settings')
+    
+        gray = cv2.cvtColor(plate_image, cv2.COLOR_BGR2GRAY)
+        gray = imutils.resize(gray, width=1000 )
+        gray = cv2.fastNlMeansDenoising(gray, h=den1)
+        # gray = cv2.GaussianBlur(gray,(5,5),0)
+        kernel = np.array([[-1, -1, -1],
+                   [-1, h1, -1],
+                   [-1, -1, -1]])
+        # gray = cv2.filter2D(gray, -1, kernel)
+        gray = cv2.equalizeHist(gray)
+       
+
+        clahe = cv2.createCLAHE(clipLimit=den)
+        gray = clahe.apply(gray)
+
+# Применение бинаризации
+        # _,  gray = cv2.threshold( gray, h1,s1, cv2.THRESH_BINARY_INV + cv2.THRESH_BINARY)
   
-        config = '-c tessedit_char_whitelist=0123456789 --psm 9'  # Настройки OCR
-        plate_text = pytesseract.image_to_string(gray,lang='rus', config=config)
+        config = r'--oem 1  -c tessedit_char_whitelist=0123456789ABEKMHOPCTyX  --psm 9 -l eng'  # Настройки OCRconfig = '--oem 1 --psm 6 -l eng'
+        plate_text = pytesseract.image_to_string(   gray, config=config)
        
         print("Распознанный номер: ", plate_text)
         image1 = image.copy()
-        cv2.putText(image1, translit(plate_text, language_code='ru', reversed=True), (20,20), cv2.FONT_HERSHEY_SIMPLEX, 1, color_yellow, 2)
+        cv2.putText(image1, plate_text, (20,50), cv2.FONT_HERSHEY_SIMPLEX, 1, color_yellow, 2)
         cv2.imshow('result', image1)
         cv2.imshow('Car Plate Image',  gray)
         ch = cv2.waitKey(5)
