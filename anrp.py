@@ -17,11 +17,11 @@ cv2.namedWindow( "settings" ) # создаем окно настроек
 
 # создаем 6 бегунков для настройки начального и конечного цвета фильтра
 cv2.createTrackbar('createCLAHE', 'settings', 1, 50, nothing)
-cv2.createTrackbar('fastNlMeansDenoising', 'settings', 33, 150, nothing)
-cv2.createTrackbar('min', 'settings', 2, 255, nothing)
-cv2.createTrackbar('max', 'settings', 193, 255, nothing)
-cv2.createTrackbar('RageMin', 'settings', 2, 255, nothing)
-cv2.createTrackbar('RageMax', 'settings', 193, 255, nothing)
+cv2.createTrackbar('fastNlMeansDenoising', 'settings', 32, 150, nothing)
+cv2.createTrackbar('min', 'settings', 62, 255, nothing)
+cv2.createTrackbar('max', 'settings', 83, 255, nothing)
+cv2.createTrackbar('RageMin', 'settings', 94, 255, nothing)
+cv2.createTrackbar('RageMax', 'settings', 161, 255, nothing)
 # Предобработка изображения
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -57,13 +57,15 @@ while  True:
         den1 = cv2.getTrackbarPos('fastNlMeansDenoising', 'settings')
     
         gray = cv2.cvtColor(plate_image, cv2.COLOR_BGR2GRAY)
+       
         gray = imutils.resize(gray, width=1000 )
         gray = cv2.fastNlMeansDenoising(gray, h=den1)
-        # gray = cv2.GaussianBlur(gray,(5,5),0)
+        gray = cv2.GaussianBlur(gray,(5,5),0)
         kernel = np.array([[-1, -1, -1],
-                   [-1, h1, -1],
+                   [-1, 9, -1],
                    [-1, -1, -1]])
-        # gray = cv2.filter2D(gray, -1, kernel)
+        gray = cv2.filter2D(gray, -1, kernel)
+        gray = cv2.inRange(gray,Rageh1,Rages1)
         gray = cv2.equalizeHist(gray)
        
 
@@ -71,7 +73,7 @@ while  True:
         gray = clahe.apply(gray)
 
 # Применение бинаризации
-        # _,  gray = cv2.threshold( gray, h1,s1, cv2.THRESH_BINARY_INV + cv2.THRESH_BINARY)
+        _,  gray = cv2.threshold( gray, h1,s1, cv2.THRESH_BINARY_INV + cv2.THRESH_BINARY)
   
         config = r'--oem 1  -c tessedit_char_whitelist=0123456789ABEKMHOPCTyX  --psm 9 -l eng'  # Настройки OCRconfig = '--oem 1 --psm 6 -l eng'
         plate_text = pytesseract.image_to_string(   gray, config=config)
